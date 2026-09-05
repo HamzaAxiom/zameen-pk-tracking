@@ -263,17 +263,34 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
 /* Note Popover modal/flyout */
 .zt-note-popover {
   position: absolute !important;
-  top: calc(100% + 4px) !important;
+  top: calc(100% + 6px) !important;
   left: 0 !important;
-  width: 290px !important;
+  width: 300px !important;
+  max-width: calc(100vw - 32px) !important;
   background: #ffffff !important;
   border-radius: 8px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
-  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+  border: 1.5px solid #cbd5e1 !important;
   padding: 12px !important;
-  z-index: 9999 !important;
+  z-index: 2147483647 !important;
   pointer-events: auto !important;
   animation: ztSlideDown 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+}
+
+/* Open upwards when near bottom of viewport or in floating bar */
+.zt-note-popover.zt-popover-up,
+.zt-detail-floating-bar .zt-note-popover {
+  top: auto !important;
+  bottom: calc(100% + 8px) !important;
+  animation: ztSlideUp 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Align to right edge when near right boundary */
+.zt-note-popover.zt-popover-align-right,
+.zt-detail-floating-bar .zt-note-popover {
+  left: auto !important;
+  right: 0 !important;
 }
 
 .zt-note-popover-header {

@@ -368,6 +368,16 @@
     });
 
     bar.appendChild(popover);
+
+    // Auto-detect viewport boundary and position smartly
+    const rect = popover.getBoundingClientRect();
+    if (rect.bottom > window.innerHeight - 15) {
+      popover.classList.add('zt-popover-up');
+    }
+    if (rect.right > window.innerWidth - 15) {
+      popover.classList.add('zt-popover-align-right');
+    }
+
     popover.querySelector('textarea').focus();
   }
 
@@ -634,6 +644,10 @@
     });
 
     bar.appendChild(popover);
+
+    // Floating bar is at bottom of viewport, so popover must open UPWARDS and align right
+    popover.classList.add('zt-popover-up', 'zt-popover-align-right');
+
     popover.querySelector('textarea').focus();
   }
 
