@@ -459,62 +459,47 @@
     let bar = document.querySelector('.zt-detail-floating-bar');
 
     if (!bar) {
-      bar = document.createElement('div');
-      bar.className = 'zt-detail-floating-bar';
-      bar.addEventListener('click', (e) => e.stopPropagation());
-      bar.addEventListener('mousedown', (e) => e.stopPropagation());
+      bar = createDetailFloatingBar(data);
+      document.body.appendChild(bar);
+    } else if (bar.dataset.ztId !== data.id) {
+      bar.remove();
+      bar = createDetailFloatingBar(data);
       document.body.appendChild(bar);
     }
 
-    renderDetailBarContent(bar, data, tracked, 'floating');
+    updateDetailFloatingBarState(bar, data, tracked);
   }
 
   /**
-   * Render internal interactive HTML for any detail bar
+   * Create the floating action bar structure once
    */
-  function renderDetailBarContent(bar, data, tracked, barType) {
-    const isContacted = !!tracked;
-    const currentStatus = (tracked && tracked.status) || 'contacted';
-    const statusText = tracked ? formatBadgeText(tracked) : 'Not Contacted';
-    const hasNote = tracked && tracked.note && tracked.note.trim().length > 0;
-    const relativeTime = tracked && tracked.contactedAt ? formatRelativeTime(tracked.contactedAt) : '';
+  function createDetailFloatingBar(data) {
+    const bar = document.createElement('div');
+    bar.className = 'zt-detail-floating-bar';
+    bar.dataset.ztId = data.id;
+    bar.addEventListener('click', (e) => e.stopPropagation());
+    bar.addEventListener('mousedown', (e) => e.stopPropagation());
 
-    bar.innerHTML = `
-      <div class="zt-detail-bar-inner zt-detail-bar-${barType}">
-        <div class="zt-detail-group">
-          <span class="zt-brand-pill">
-            <svg viewBox="0 0 20 20" class="zt-logo-icon"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
-            Tracker
-          </span>
+    const inner = document.createElement('div');
+    inner.className = 'zt-detail-bar-inner zt-detail-bar-floating';
 
-          <button type="button" class="zt-btn zt-detail-toggle-btn ${isContacted ? `zt-btn-${currentStatus}` : 'zt-btn-mark'}">
-            ${isContacted ? `${ICONS.check} ${statusText}` : `${ICONS.plus} Mark Contacted`}
-          </button>
+    const group = document.createElement('div');
+    group.className = 'zt-detail-group';
 
-          <select class="zt-status-select zt-detail-status-select" style="display: ${isContacted ? 'inline-flex' : 'none'};">
-            <option value="contacted" ${currentStatus === 'contacted' ? 'selected' : ''}>✓ Contacted</option>
-            <option value="followup" ${currentStatus === 'followup' ? 'selected' : ''}>⏳ Follow-up</option>
-            <option value="rejected" ${currentStatus === 'rejected' ? 'selected' : ''}>✕ Passed</option>
-            <option value="unmark">↺ Unmark</option>
-          </select>
-
-          <button type="button" class="zt-btn zt-btn-note ${hasNote ? 'has-note' : ''}">
-            ${ICONS.note} <span>${hasNote ? 'Note' : 'Add Note'}</span>
-          </button>
-
-          ${relativeTime ? `<span class="zt-contacted-time" title="${new Date(tracked.contactedAt).toLocaleString()}">${relativeTime}</span>` : ''}
-        </div>
-
-        ${hasNote ? `
-          <div class="zt-detail-note-preview" title="Click 'Note' button to edit">
-            <span class="zt-note-label">Note:</span> "${tracked.note}"
-          </div>
-        ` : ''}
-      </div>
+    // 1. Brand Pill
+    const brandPill = document.createElement('span');
+    brandPill.className = 'zt-brand-pill';
+    brandPill.innerHTML = `
+      <svg viewBox="0 0 20 20" class="zt-logo-icon"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+      Tracker
     `;
 
-    // 1. Toggle Contacted Button
-    const toggleBtn = bar.querySelector('.zt-detail-toggle-btn');
+    // 2. Toggle Contacted Button
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'zt-btn zt-detail-toggle-btn zt-btn-mark';
+    toggleBtn.innerHTML = `${ICONS.plus} Mark Contacted`;
+
     toggleBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -522,11 +507,11 @@
       const current = trackedListings[data.id];
       if (current) {
         delete trackedListings[data.id];
-        refreshAllDetailBars();
+        updateDetailFloatingBarState(bar, data, null);
         await ZameenStorage.removeListing(data.id);
         showToast(`Removed #${data.id} from contacted`, 'info', async () => {
           trackedListings[data.id] = current;
-          refreshAllDetailBars();
+          updateDetailFloatingBarState(bar, data, current);
           await ZameenStorage.saveListing(current);
         });
       } else {
@@ -537,18 +522,28 @@
           contactedAt: new Date().toISOString()
         };
         trackedListings[data.id] = newListing;
-        refreshAllDetailBars();
+        updateDetailFloatingBarState(bar, data, newListing);
         await ZameenStorage.saveListing(newListing);
         showToast(`✓ Marked #${data.id} as Contacted!`, 'success', async () => {
           delete trackedListings[data.id];
-          refreshAllDetailBars();
+          updateDetailFloatingBarState(bar, data, null);
           await ZameenStorage.removeListing(data.id);
         });
       }
     });
 
-    // 2. Status Dropdown
-    const statusSelect = bar.querySelector('.zt-detail-status-select');
+    // 3. Status Select
+    const statusSelect = document.createElement('select');
+    statusSelect.className = 'zt-status-select zt-detail-status-select';
+    statusSelect.innerHTML = `
+      <option value="contacted">✓ Contacted</option>
+      <option value="followup">⏳ Follow-up</option>
+      <option value="rejected">✕ Passed</option>
+      <option value="unmark">↺ Unmark</option>
+    `;
+
+    statusSelect.addEventListener('click', (e) => e.stopPropagation());
+    statusSelect.addEventListener('mousedown', (e) => e.stopPropagation());
     statusSelect.addEventListener('change', async (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -557,12 +552,12 @@
       if (newStatus === 'unmark') {
         const current = trackedListings[data.id];
         delete trackedListings[data.id];
-        refreshAllDetailBars();
+        updateDetailFloatingBarState(bar, data, null);
         await ZameenStorage.removeListing(data.id);
         showToast(`Removed #${data.id} from contacted`, 'info', async () => {
           if (current) {
             trackedListings[data.id] = current;
-            refreshAllDetailBars();
+            updateDetailFloatingBarState(bar, data, current);
             await ZameenStorage.saveListing(current);
           }
         });
@@ -573,19 +568,99 @@
           status: newStatus
         };
         trackedListings[data.id] = updated;
-        refreshAllDetailBars();
+        updateDetailFloatingBarState(bar, data, updated);
         await ZameenStorage.saveListing(updated);
         showToast(`Status updated to: ${newStatus}`);
       }
     });
 
-    // 3. Note Button
-    const noteBtn = bar.querySelector('.zt-btn-note');
+    // 4. Note Button
+    const noteBtn = document.createElement('button');
+    noteBtn.type = 'button';
+    noteBtn.className = 'zt-btn zt-btn-note';
+    noteBtn.innerHTML = `${ICONS.note} <span>Add Note</span>`;
+
     noteBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       toggleDetailNotePopover(bar, data);
     });
+
+    // 5. Time label
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'zt-contacted-time';
+
+    // 6. Note Preview
+    const notePreview = document.createElement('div');
+    notePreview.className = 'zt-detail-note-preview';
+    notePreview.style.display = 'none';
+
+    group.appendChild(brandPill);
+    group.appendChild(toggleBtn);
+    group.appendChild(statusSelect);
+    group.appendChild(noteBtn);
+    group.appendChild(timeSpan);
+
+    inner.appendChild(group);
+    inner.appendChild(notePreview);
+    bar.appendChild(inner);
+
+    return bar;
+  }
+
+  /**
+   * Update floating action bar state without wiping or rebuilding the DOM
+   */
+  function updateDetailFloatingBarState(bar, data, tracked) {
+    if (!bar) return;
+    const isContacted = !!tracked;
+    const currentStatus = (tracked && tracked.status) || 'contacted';
+    const statusText = tracked ? formatBadgeText(tracked) : 'Not Contacted';
+    const hasNote = tracked && tracked.note && tracked.note.trim().length > 0;
+    const relativeTime = tracked && tracked.contactedAt ? formatRelativeTime(tracked.contactedAt) : '';
+
+    // Update toggle button
+    const toggleBtn = bar.querySelector('.zt-detail-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.className = `zt-btn zt-detail-toggle-btn ${isContacted ? `zt-btn-${currentStatus}` : 'zt-btn-mark'}`;
+      toggleBtn.innerHTML = isContacted ? `${ICONS.check} ${statusText}` : `${ICONS.plus} Mark Contacted`;
+      toggleBtn.title = isContacted ? 'Click to unmark' : 'Mark this listing as contacted';
+    }
+
+    // Update status select
+    const statusSelect = bar.querySelector('.zt-detail-status-select');
+    if (statusSelect) {
+      statusSelect.style.display = isContacted ? 'inline-flex' : 'none';
+      if (isContacted) {
+        statusSelect.value = currentStatus;
+      }
+    }
+
+    // Update note button
+    const noteBtn = bar.querySelector('.zt-btn-note');
+    if (noteBtn) {
+      noteBtn.className = `zt-btn zt-btn-note ${hasNote ? 'has-note' : ''}`;
+      noteBtn.querySelector('span').textContent = hasNote ? 'Note' : 'Add Note';
+    }
+
+    // Update time label
+    const timeSpan = bar.querySelector('.zt-contacted-time');
+    if (timeSpan) {
+      timeSpan.textContent = relativeTime;
+      timeSpan.title = (tracked && tracked.contactedAt) ? new Date(tracked.contactedAt).toLocaleString() : '';
+      timeSpan.style.display = relativeTime ? 'inline-flex' : 'none';
+    }
+
+    // Update note preview (never touches the note popover itself!)
+    const notePreview = bar.querySelector('.zt-detail-note-preview');
+    if (notePreview) {
+      if (hasNote) {
+        notePreview.style.display = 'block';
+        notePreview.innerHTML = `<span class="zt-note-label">Note:</span> "${tracked.note}"`;
+      } else {
+        notePreview.style.display = 'none';
+      }
+    }
   }
 
   /**
@@ -600,7 +675,7 @@
 
     const tracked = trackedListings[data.id] || {};
     const popover = document.createElement('div');
-    popover.className = 'zt-note-popover';
+    popover.className = 'zt-note-popover zt-popover-up zt-popover-align-right';
     popover.addEventListener('click', (e) => e.stopPropagation());
     popover.addEventListener('mousedown', (e) => e.stopPropagation());
 
@@ -637,17 +712,13 @@
         note: text
       };
       trackedListings[data.id] = updated;
-      refreshAllDetailBars();
+      updateDetailFloatingBarState(bar, data, updated);
       await ZameenStorage.saveListing(updated);
       popover.remove();
       showToast(`Note saved for #${data.id}`);
     });
 
     bar.appendChild(popover);
-
-    // Floating bar is at bottom of viewport, so popover must open UPWARDS and align right
-    popover.classList.add('zt-popover-up', 'zt-popover-align-right');
-
     popover.querySelector('textarea').focus();
   }
 
@@ -736,12 +807,22 @@
    */
   function setupObserver() {
     let debounceTimer = null;
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((mutations) => {
+      // Check if mutations were caused solely by our own elements
+      const isInternal = mutations.every((m) => {
+        const t = m.target;
+        return t && (
+          (t.classList && (t.classList.contains('zt-note-popover') || t.classList.contains('zt-detail-floating-bar') || t.classList.contains('zt-toast'))) ||
+          (t.closest && t.closest('.zt-note-popover, .zt-detail-floating-bar, .zt-toast-container'))
+        );
+      });
+      if (isInternal) return;
+
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         processListings();
         initDetailPage();
-      }, 250);
+      }, 300);
     });
 
     observer.observe(document.body, {
