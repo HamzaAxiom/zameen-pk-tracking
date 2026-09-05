@@ -427,8 +427,9 @@
       return;
     }
 
-    injectDetailHeaderBar(data);
-    injectDetailSidebarBar(data);
+    // Clean up any old header/sidebar bars to keep ONLY the bottom floating bar
+    document.querySelectorAll('.zt-detail-header-bar, .zt-detail-sidebar-bar').forEach(el => el.remove());
+
     updateDetailFloatingBar(data);
     setupDetailContactListeners(data);
   }
@@ -436,74 +437,12 @@
   function refreshAllDetailBars() {
     const data = ZameenExtractor.extractFromDetailPage();
     if (!data || !data.id) return;
-    injectDetailHeaderBar(data);
-    injectDetailSidebarBar(data);
+    document.querySelectorAll('.zt-detail-header-bar, .zt-detail-sidebar-bar').forEach(el => el.remove());
     updateDetailFloatingBar(data);
   }
 
   /**
-   * 1. Inject Prominent Inline Action Bar right under Property Title / Header
-   */
-  function injectDetailHeaderBar(data) {
-    const tracked = trackedListings[data.id];
-    let bar = document.querySelector('.zt-detail-header-bar');
-
-    if (!bar) {
-      // Find optimal insertion anchor in the header area
-      // Target: .c121f914 contains h1.aea614fd and div.cd230541 (location)
-      const headerContainer = document.querySelector('.c121f914, div._301c67f2');
-      const h1El = document.querySelector('h1.aea614fd, h1');
-
-      if (!headerContainer && !h1El) return;
-
-      bar = document.createElement('div');
-      bar.className = 'zt-detail-header-bar';
-      bar.addEventListener('click', (e) => e.stopPropagation());
-      bar.addEventListener('mousedown', (e) => e.stopPropagation());
-
-      const locEl = headerContainer ? headerContainer.querySelector('.cd230541, [aria-label="Property header"]') : null;
-      if (locEl && locEl.parentNode) {
-        locEl.parentNode.insertBefore(bar, locEl.nextSibling);
-      } else if (headerContainer) {
-        headerContainer.appendChild(bar);
-      } else if (h1El && h1El.parentNode) {
-        h1El.parentNode.insertBefore(bar, h1El.nextSibling);
-      }
-    }
-
-    renderDetailBarContent(bar, data, tracked, 'header');
-  }
-
-  /**
-   * 2. Inject Action Bar directly in Sidebar Agency Contact Box
-   */
-  function injectDetailSidebarBar(data) {
-    const tracked = trackedListings[data.id];
-    let bar = document.querySelector('.zt-detail-sidebar-bar');
-
-    if (!bar) {
-      // Target: ._45f31597 (Agency contact form container) or .a328e85c
-      const sidebarContainer = document.querySelector('div._45f31597, .a328e85c, [aria-label="Agency contact form"]');
-      if (!sidebarContainer) return;
-
-      bar = document.createElement('div');
-      bar.className = 'zt-detail-sidebar-bar';
-      bar.addEventListener('click', (e) => e.stopPropagation());
-      bar.addEventListener('mousedown', (e) => e.stopPropagation());
-
-      const form = sidebarContainer.querySelector('form.ab8ae9d8, form');
-      if (form && form.parentNode) {
-        form.parentNode.insertBefore(bar, form);
-      } else {
-        sidebarContainer.insertBefore(bar, sidebarContainer.firstChild);
-      }
-    }
-
-    renderDetailBarContent(bar, data, tracked, 'sidebar');
-  }
-
-  /**
-   * 3. Update or inject Bottom Floating Bar
+   * Bottom Floating Action Bar
    */
   function updateDetailFloatingBar(data) {
     const tracked = trackedListings[data.id];
