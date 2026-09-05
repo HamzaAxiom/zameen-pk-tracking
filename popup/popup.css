@@ -622,3 +622,136 @@ input:checked + .slider:before {
 .danger-btn:hover {
   background: #fee2e2;
 }
+
+/* Cloud Sync Header Badge */
+.brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloud-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 2px 7px;
+  border-radius: 12px;
+  line-height: 1;
+}
+
+.cloud-status-badge.disconnected {
+  color: #64748b;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.cloud-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+}
+.cloud-status-badge.disconnected .cloud-dot {
+  background: #94a3b8;
+}
+
+/* Cloud Sync Card in Settings Drawer */
+.cloud-sync-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.cloud-sync-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cloud-sync-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.cloud-sync-sub {
+  display: block;
+  font-size: 11px;
+  color: #047857;
+}
+
+.cloud-sync-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.text-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-family: monospace;
+  outline: none;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+.text-input:focus {
+  border-color: var(--primary);
+}
+
+.sync-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-sm {
+  padding: 5px 10px !important;
+  font-size: 11px !important;
+}
+
+.primary-btn {
+  background: var(--primary);
+  border: 1px solid var(--primary-hover);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.primary-btn:hover {
+  background: var(--primary-hover);
+}
+
+.sync-status-msg {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.sync-status-msg.success {
+  color: #059669;
+}
+.sync-status-msg.error {
+  color: #dc2626;
+}
+

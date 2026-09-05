@@ -27,6 +27,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const settingDim = document.getElementById('settingDim');
   const settingBorder = document.getElementById('settingBorder');
   const settingBadge = document.getElementById('settingBadge');
+  
+  // Cloud Sync Elements
+  const cloudStatusBadge = document.getElementById('cloudStatusBadge');
+  const settingFirebaseSync = document.getElementById('settingFirebaseSync');
+  const settingFirebaseUrl = document.getElementById('settingFirebaseUrl');
+  const btnTestFirebase = document.getElementById('btnTestFirebase');
+  const btnManualSync = document.getElementById('btnManualSync');
+  const firebaseStatusMsg = document.getElementById('firebaseStatusMsg');
 
   // Export / Backup Elements
   const btnExportCsv = document.getElementById('btnExportCsv');
@@ -44,6 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       allListings = newValue;
       updateStats();
       renderListings();
+    } else if (type === 'settings') {
+      updateCloudBadge(newValue);
     }
   });
 
@@ -59,6 +69,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     settingDim.checked = !!settings.dimContactedCards;
     settingBorder.checked = !!settings.highlightBorder;
     settingBadge.checked = !!settings.showBadges;
+    settingFirebaseSync.checked = !!settings.firebaseSyncEnabled;
+    settingFirebaseUrl.value = settings.firebaseUrl || '';
+    updateCloudBadge(settings);
+  }
+
+  function updateCloudBadge(settings) {
+    if (cloudStatusBadge) {
+      if (settings.firebaseSyncEnabled && settings.firebaseUrl) {
+        cloudStatusBadge.className = 'cloud-status-badge';
+        cloudStatusBadge.innerHTML = '<span class="cloud-dot"></span> Synced';
+        cloudStatusBadge.title = 'Live synced with Firebase';
+      } else {
+        cloudStatusBadge.className = 'cloud-status-badge disconnected';
+        cloudStatusBadge.innerHTML = '<span class="cloud-dot"></span> Local Only';
+        cloudStatusBadge.title = 'Cloud sync is disabled';
+      }
+    }
   }
 
   // Update Stats
@@ -230,15 +257,73 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Save Settings on switch change
-  [settingAutoMark, settingDim, settingBorder, settingBadge].forEach(toggle => {
+  [settingAutoMark, settingDim, settingBorder, settingBadge, settingFirebaseSync].forEach(toggle => {
     toggle.addEventListener('change', async () => {
       await ZameenStorage.saveSettings({
         autoMarkOnContact: settingAutoMark.checked,
         dimContactedCards: settingDim.checked,
         highlightBorder: settingBorder.checked,
-        showBadges: settingBadge.checked
+        showBadges: settingBadge.checked,
+        firebaseSyncEnabled: settingFirebaseSync.checked,
+        firebaseUrl: settingFirebaseUrl.value.trim()
       });
     });
+  });
+
+  settingFirebaseUrl.addEventListener('change', async () => {
+    await ZameenStorage.saveSettings({
+      firebaseUrl: settingFirebaseUrl.value.trim(),
+      firebaseSyncEnabled: settingFirebaseSync.checked
+    });
+  });
+
+  // Test Firebase Connection
+  btnTestFirebase.addEventListener('click', async () => {
+    const rawUrl = settingFirebaseUrl.value.trim();
+    if (!rawUrl) {
+      firebaseStatusMsg.className = 'sync-status-msg error';
+      firebaseStatusMsg.textContent = 'Please enter a Firebase URL';
+      return;
+    }
+
+    firebaseStatusMsg.className = 'sync-status-msg';
+    firebaseStatusMsg.textContent = 'Testing connection...';
+
+    const cleanUrl = ZameenStorage.cleanFirebaseUrl(rawUrl);
+    try {
+      const res = await fetch(`${cleanUrl}/listings.json`);
+      if (res.ok) {
+        firebaseStatusMsg.className = 'sync-status-msg success';
+        firebaseStatusMsg.textContent = '✓ Connected successfully to Firebase!';
+        await ZameenStorage.saveSettings({
+          firebaseUrl: cleanUrl,
+          firebaseSyncEnabled: true
+        });
+        settingFirebaseSync.checked = true;
+      } else {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+    } catch (err) {
+      firebaseStatusMsg.className = 'sync-status-msg error';
+      firebaseStatusMsg.textContent = 'Connection failed: ' + err.message;
+    }
+  });
+
+  // Manual Sync Now
+  btnManualSync.addEventListener('click', async () => {
+    btnManualSync.textContent = 'Syncing...';
+    try {
+      allListings = await ZameenStorage.pullAllFromFirebase();
+      updateStats();
+      renderListings();
+      firebaseStatusMsg.className = 'sync-status-msg success';
+      firebaseStatusMsg.textContent = '✓ All listings synced with cloud!';
+    } catch (err) {
+      firebaseStatusMsg.className = 'sync-status-msg error';
+      firebaseStatusMsg.textContent = 'Sync failed: ' + err.message;
+    } finally {
+      btnManualSync.textContent = 'Sync Now';
+    }
   });
 
   // Export to CSV

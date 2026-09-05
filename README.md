@@ -1,11 +1,14 @@
 # Zameen Property & Plot Contact Tracker - Chrome Extension
 
-A Chrome Extension for property seekers on **Zameen.com**. Easily track which plots and properties you have already contacted, prevent duplicate calls/messages, add private notes (demands, agent names), and export your contacts to CSV (Excel).
+A Chrome Extension for property seekers on **Zameen.com**. Easily track which plots and properties you have already contacted, prevent duplicate calls/messages, add private notes (demands, agent names), sync in real-time with family members/partners via Firebase, and export your contacts to CSV (Excel).
 
 ---
 
 ## 🌟 Features
 
+- **🔥 Real-Time Multi-User Cloud Sync (Firebase)**:
+  - Both you and your brother/partner can browse Zameen at the same time.
+  - When either of you marks a plot, writes a note, or contacts an agent, it **instantly turns green on both screens in under 1 second** without refreshing!
 - **Direct In-Page Status Badges**:
   - Adds a **"Mark Contacted"** / **"✓ Contacted"** button right on each Zameen search result card.
   - Highlights contacted cards with a clean green border accent and a **"✓ CONTACTED"** top badge.
@@ -44,6 +47,18 @@ A Chrome Extension for property seekers on **Zameen.com**. Easily track which pl
 
 ---
 
+## 🔄 Setting Up Real-Time Sync (You & Your Brother)
+
+1. Have your brother install the extension on his computer.
+2. Click the extension icon in the toolbar, then click the **Settings (gear icon)** at the top right.
+3. In the **Firebase Live Sync** section:
+   - Paste your private Firebase Realtime Database URL (e.g. `https://your-project-id-default-rtdb.firebaseio.com`).
+   - Turn ON the toggle switch.
+4. Click **"Test Connection"** (it will say *"✓ Connected successfully to Firebase!"*).
+5. Both extensions will now synchronize seamlessly in real time!
+
+---
+
 ## 💡 How to Use
 
 1. Open [Zameen.com](https://www.zameen.com/Plots/) and search for plots in any city or sector (e.g. Islamabad B-17, DHA, Bahria Town, etc.).
@@ -65,10 +80,10 @@ zameen extension/
 │   ├── content.js             # Injected script (card badges, auto-contact listeners)
 │   └── content.css            # Styles for in-page badges, buttons, and popovers
 ├── popup/
-│   ├── popup.html             # Extension dashboard popup UI
+│   ├── popup.html             # Extension dashboard popup UI with Cloud Sync
 │   ├── popup.css              # Popup styling
-│   └── popup.js               # Dashboard controller (search, filters, export)
+│   └── popup.js               # Dashboard controller (search, filters, Firebase sync)
 └── utils/
-    ├── storage.js             # Chrome storage local wrapper
+    ├── storage.js             # Chrome storage + Firebase Realtime SSE Live Sync
     └── extractor.js           # DOM parser for Zameen listing cards & detail pages
 ```

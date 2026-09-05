@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Zameen Property & Plot Contact Tracker",
-  "version": "1.0.0",
-  "description": "Keep track of plots and properties you have contacted on Zameen.com. Mark listings, add notes, and view status badges directly on Zameen.",
+  "version": "1.1.0",
+  "description": "Keep track of plots and properties you have contacted on Zameen.com with real-time cloud sync for team & family.",
   "permissions": [
     "storage",
     "unlimitedStorage"
   ],
   "host_permissions": [
-    "*://*.zameen.com/*"
+    "*://*.zameen.com/*",
+    "https://*.firebaseio.com/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
