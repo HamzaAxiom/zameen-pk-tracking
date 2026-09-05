@@ -117,14 +117,14 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
 
 /* Action Bar inside card - CRITICAL: High z-index & isolated pointer-events so clicks don't open listing link */
 .zameen-tracker-action-bar {
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   white-space: nowrap !important;
   gap: 6px !important;
   margin: 6px 0 2px 0 !important;
-  padding: 4px 8px !important;
+  padding: 3px 6px !important;
   background: #f8fafc !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 6px !important;
@@ -136,6 +136,7 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
   width: fit-content !important;
   max-width: 100% !important;
   overflow: visible !important;
+  line-height: 1 !important;
 }
 
 /* Action buttons */
@@ -144,7 +145,7 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
   align-items: center !important;
   justify-content: center !important;
   gap: 5px !important;
-  padding: 4px 10px !important;
+  padding: 0 10px !important;
   height: 28px !important;
   border-radius: 5px !important;
   font-size: 11.5px !important;
@@ -159,6 +160,8 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
   z-index: 101 !important;
   pointer-events: auto !important;
   box-sizing: border-box !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
 }
 
 .zt-btn svg {
@@ -166,6 +169,8 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
   height: 13px !important;
   flex-shrink: 0 !important;
   fill: currentColor !important;
+  margin: 0 !important;
+  display: block !important;
 }
 
 /* Mark Contacted (Default Uncontacted State) */
@@ -211,10 +216,14 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
 /* Status Selector Select */
 .zt-status-select {
   height: 28px !important;
-  padding: 0 6px !important;
+  padding: 0 22px 0 8px !important;
   border-radius: 5px !important;
   border: 1px solid #cbd5e1 !important;
-  background: #ffffff !important;
+  background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23475569' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 7px center !important;
+  background-size: 8px 5px !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
   color: #334155 !important;
   font-size: 11px !important;
   font-weight: 600 !important;
@@ -224,6 +233,12 @@ body.zt-dim-contacted li[role="article"].zt-card-contacted:hover {
   z-index: 101 !important;
   pointer-events: auto !important;
   white-space: nowrap !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
+  line-height: 26px !important;
 }
 .zt-status-select:hover, .zt-status-select:focus {
   border-color: #10b981 !important;
