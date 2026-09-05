@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Zameen Property & Plot Contact Tracker",
+  "version": "1.0.0",
+  "description": "Keep track of plots and properties you have contacted on Zameen.com. Mark listings, add notes, and view status badges directly on Zameen.",
+  "permissions": [
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "*://*.zameen.com/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Zameen Contact Tracker"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.zameen.com/*"
+      ],
+      "js": [
+        "utils/storage.js",
+        "utils/extractor.js",
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

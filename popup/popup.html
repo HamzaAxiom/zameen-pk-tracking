@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zameen Contact Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="#10B981"/>
+            <path d="M16 6L6 14V26H13V19H19V26H26V14L16 6Z" fill="white"/>
+            <path d="M21 10L24 13L29 7" stroke="#34D399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Zameen Tracker</h1>
+          <span class="brand-subtitle">Plot & Property Contacts</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnSettingsToggle" class="icon-btn" title="Settings">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <button id="btnExportCsv" class="icon-btn" title="Export to CSV (Excel)">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Quick Stats Bar -->
+    <div class="stats-row">
+      <div class="stat-pill">
+        <span class="stat-num" id="statTotal">0</span>
+        <span class="stat-text">Total Saved</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-num" id="statContacted">0</span>
+        <span class="stat-text">Contacted</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-num" id="statFollowup">0</span>
+        <span class="stat-text">Follow-up</span>
+      </div>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Search by plot, ID, location, or notes...">
+      <button id="btnClearSearch" class="clear-search-btn" style="display: none;">✕</button>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="tabs-container">
+      <button class="tab-btn active" data-filter="all">All</button>
+      <button class="tab-btn" data-filter="contacted">Contacted</button>
+      <button class="tab-btn" data-filter="followup">Follow-up</button>
+      <button class="tab-btn" data-filter="rejected">Passed</button>
+    </div>
+
+    <!-- Listings Scroll Area -->
+    <div id="listingsContainer" class="listings-list">
+      <!-- Injected dynamically via popup.js -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon">📍</div>
+      <h3 class="empty-title">No contacted plots yet</h3>
+      <p class="empty-desc">
+        Browse plots on <strong>Zameen.com</strong> and click <strong>"Mark Contacted"</strong> or tap the <strong>WhatsApp/Call</strong> buttons to track them!
+      </p>
+      <a href="https://www.zameen.com/Plots/" target="_blank" class="open-zameen-btn">Open Zameen Plots</a>
+    </div>
+
+    <!-- Settings Modal Drawer -->
+    <div id="settingsDrawer" class="settings-drawer" style="display: none;">
+      <div class="drawer-header">
+        <h2>Extension Settings</h2>
+        <button id="btnCloseSettings" class="close-drawer-btn">✕</button>
+      </div>
+      <div class="drawer-content">
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Auto-mark on WhatsApp & Call</span>
+            <span class="setting-desc">Automatically mark listings as contacted when clicking Call or WhatsApp</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingAutoMark">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Dim Contacted Listings</span>
+            <span class="setting-desc">Softly fade out listings you already contacted so new plots stand out</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingDim">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Green Border Accent</span>
+            <span class="setting-desc">Highlight contacted cards with a clean green border on Zameen</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingBorder">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Show Top Badge</span>
+            <span class="setting-desc">Show "✓ Contacted" badge on top-left of cards</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingBadge">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <hr class="drawer-divider">
+
+        <div class="data-actions">
+          <button id="btnExportJson" class="secondary-btn">Backup Data (JSON)</button>
+          <label class="secondary-btn file-input-label">
+            Restore Backup
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+          </label>
+          <button id="btnClearData" class="danger-btn">Clear All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../utils/storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
