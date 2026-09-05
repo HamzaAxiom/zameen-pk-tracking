@@ -35,22 +35,26 @@
         if (type === 'listings') {
           trackedListings = newValue;
           refreshAllCards();
-          updateDetailPageBar();
+          refreshAllDetailBars();
         } else if (type === 'settings') {
           userSettings = newValue;
           applyBodySettings();
           refreshAllCards();
+          refreshAllDetailBars();
         }
       });
 
       // Initial card scan
       processListings();
 
-      // If on a property detail page, inject the floating bar
+      // If on a property detail page, inject the detail action bars
       initDetailPage();
 
       // Watch for dynamically loaded listings (infinite scroll/filtering/pagination)
       setupObserver();
+
+      // Watch for client-side SPA navigation
+      setupRouteWatcher();
     } catch (err) {
       console.error('[Zameen Tracker] Error initializing:', err);
     }
@@ -417,54 +421,169 @@
    */
   function initDetailPage() {
     const data = ZameenExtractor.extractFromDetailPage();
-    if (!data || !data.id) return;
+    if (!data || !data.id) {
+      // Clean up detail bars if user navigated away from a property page
+      document.querySelectorAll('.zt-detail-header-bar, .zt-detail-sidebar-bar, .zt-detail-floating-bar').forEach(el => el.remove());
+      return;
+    }
 
-    updateDetailPageBar();
-
-    // Hook WhatsApp / Call buttons on detail page
-    document.querySelectorAll('button[aria-label="Whatsapp"], button[aria-label="Call"]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const method = btn.getAttribute('aria-label') || 'Call';
-        const cardLike = document.body;
-        handleContactAction(cardLike, data, method);
-      });
-    });
+    injectDetailHeaderBar(data);
+    injectDetailSidebarBar(data);
+    updateDetailFloatingBar(data);
+    setupDetailContactListeners(data);
   }
 
-  function updateDetailPageBar() {
+  function refreshAllDetailBars() {
     const data = ZameenExtractor.extractFromDetailPage();
     if (!data || !data.id) return;
+    injectDetailHeaderBar(data);
+    injectDetailSidebarBar(data);
+    updateDetailFloatingBar(data);
+  }
 
-    let bar = document.querySelector('.zt-detail-floating-bar');
+  /**
+   * 1. Inject Prominent Inline Action Bar right under Property Title / Header
+   */
+  function injectDetailHeaderBar(data) {
     const tracked = trackedListings[data.id];
+    let bar = document.querySelector('.zt-detail-header-bar');
+
+    if (!bar) {
+      // Find optimal insertion anchor in the header area
+      // Target: .c121f914 contains h1.aea614fd and div.cd230541 (location)
+      const headerContainer = document.querySelector('.c121f914, div._301c67f2');
+      const h1El = document.querySelector('h1.aea614fd, h1');
+
+      if (!headerContainer && !h1El) return;
+
+      bar = document.createElement('div');
+      bar.className = 'zt-detail-header-bar';
+      bar.addEventListener('click', (e) => e.stopPropagation());
+      bar.addEventListener('mousedown', (e) => e.stopPropagation());
+
+      const locEl = headerContainer ? headerContainer.querySelector('.cd230541, [aria-label="Property header"]') : null;
+      if (locEl && locEl.parentNode) {
+        locEl.parentNode.insertBefore(bar, locEl.nextSibling);
+      } else if (headerContainer) {
+        headerContainer.appendChild(bar);
+      } else if (h1El && h1El.parentNode) {
+        h1El.parentNode.insertBefore(bar, h1El.nextSibling);
+      }
+    }
+
+    renderDetailBarContent(bar, data, tracked, 'header');
+  }
+
+  /**
+   * 2. Inject Action Bar directly in Sidebar Agency Contact Box
+   */
+  function injectDetailSidebarBar(data) {
+    const tracked = trackedListings[data.id];
+    let bar = document.querySelector('.zt-detail-sidebar-bar');
+
+    if (!bar) {
+      // Target: ._45f31597 (Agency contact form container) or .a328e85c
+      const sidebarContainer = document.querySelector('div._45f31597, .a328e85c, [aria-label="Agency contact form"]');
+      if (!sidebarContainer) return;
+
+      bar = document.createElement('div');
+      bar.className = 'zt-detail-sidebar-bar';
+      bar.addEventListener('click', (e) => e.stopPropagation());
+      bar.addEventListener('mousedown', (e) => e.stopPropagation());
+
+      const form = sidebarContainer.querySelector('form.ab8ae9d8, form');
+      if (form && form.parentNode) {
+        form.parentNode.insertBefore(bar, form);
+      } else {
+        sidebarContainer.insertBefore(bar, sidebarContainer.firstChild);
+      }
+    }
+
+    renderDetailBarContent(bar, data, tracked, 'sidebar');
+  }
+
+  /**
+   * 3. Update or inject Bottom Floating Bar
+   */
+  function updateDetailFloatingBar(data) {
+    const tracked = trackedListings[data.id];
+    let bar = document.querySelector('.zt-detail-floating-bar');
 
     if (!bar) {
       bar = document.createElement('div');
       bar.className = 'zt-detail-floating-bar';
       bar.addEventListener('click', (e) => e.stopPropagation());
+      bar.addEventListener('mousedown', (e) => e.stopPropagation());
       document.body.appendChild(bar);
     }
 
+    renderDetailBarContent(bar, data, tracked, 'floating');
+  }
+
+  /**
+   * Render internal interactive HTML for any detail bar
+   */
+  function renderDetailBarContent(bar, data, tracked, barType) {
+    const isContacted = !!tracked;
+    const currentStatus = (tracked && tracked.status) || 'contacted';
+    const statusText = tracked ? formatBadgeText(tracked) : 'Not Contacted';
+    const hasNote = tracked && tracked.note && tracked.note.trim().length > 0;
+    const relativeTime = tracked && tracked.contactedAt ? formatRelativeTime(tracked.contactedAt) : '';
+
     bar.innerHTML = `
-      <div class="zt-detail-info">
-        <span class="zt-detail-info-title">Zameen Tracker: ID #${data.id}</span>
-        <span class="zt-detail-info-sub">${tracked ? `Status: ${tracked.status.toUpperCase()}` : 'Status: Not Contacted'}</span>
+      <div class="zt-detail-bar-inner zt-detail-bar-${barType}">
+        <div class="zt-detail-left">
+          <span class="zt-brand-pill">
+            <svg viewBox="0 0 20 20" class="zt-logo-icon"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+            Tracker
+          </span>
+          <span class="zt-status-pill zt-status-${isContacted ? currentStatus : 'uncontacted'}">
+            ${isContacted ? `${ICONS.check} ${statusText}` : '○ Not Contacted'}
+          </span>
+          ${relativeTime ? `<span class="zt-contacted-time" title="${new Date(tracked.contactedAt).toLocaleString()}">${relativeTime}</span>` : ''}
+        </div>
+
+        <div class="zt-detail-actions">
+          <button type="button" class="zt-btn zt-detail-toggle-btn ${isContacted ? `zt-btn-${currentStatus}` : 'zt-btn-mark'}">
+            ${isContacted ? `${ICONS.check} ${statusText}` : `${ICONS.plus} Mark Contacted`}
+          </button>
+
+          <select class="zt-status-select zt-detail-status-select" style="display: ${isContacted ? 'inline-block' : 'none'};">
+            <option value="contacted" ${currentStatus === 'contacted' ? 'selected' : ''}>✓ Contacted</option>
+            <option value="followup" ${currentStatus === 'followup' ? 'selected' : ''}>⏳ Follow-up</option>
+            <option value="rejected" ${currentStatus === 'rejected' ? 'selected' : ''}>✕ Passed</option>
+            <option value="unmark">↺ Unmark</option>
+          </select>
+
+          <button type="button" class="zt-btn zt-btn-note ${hasNote ? 'has-note' : ''}">
+            ${ICONS.note} <span>${hasNote ? 'Note' : 'Add Note'}</span>
+          </button>
+        </div>
+
+        ${hasNote ? `
+          <div class="zt-detail-note-preview" title="Click 'Note' button to edit">
+            <span class="zt-note-label">Note:</span> "${tracked.note}"
+          </div>
+        ` : ''}
       </div>
-      <button type="button" class="zt-btn zt-detail-toggle-btn ${tracked ? 'zt-btn-contacted' : 'zt-btn-mark'}">
-        ${tracked ? `${ICONS.check} Contacted` : `${ICONS.plus} Mark Contacted`}
-      </button>
     `;
 
-    const btn = bar.querySelector('.zt-detail-toggle-btn');
-    btn.addEventListener('click', async (e) => {
+    // 1. Toggle Contacted Button
+    const toggleBtn = bar.querySelector('.zt-detail-toggle-btn');
+    toggleBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
+
       const current = trackedListings[data.id];
       if (current) {
         delete trackedListings[data.id];
-        updateDetailPageBar();
+        refreshAllDetailBars();
         await ZameenStorage.removeListing(data.id);
-        showToast(`Removed #${data.id} from contacted`);
+        showToast(`Removed #${data.id} from contacted`, 'info', async () => {
+          trackedListings[data.id] = current;
+          refreshAllDetailBars();
+          await ZameenStorage.saveListing(current);
+        });
       } else {
         const newListing = {
           ...data,
@@ -473,11 +592,164 @@
           contactedAt: new Date().toISOString()
         };
         trackedListings[data.id] = newListing;
-        updateDetailPageBar();
+        refreshAllDetailBars();
         await ZameenStorage.saveListing(newListing);
-        showToast(`✓ Marked #${data.id} as Contacted!`);
+        showToast(`✓ Marked #${data.id} as Contacted!`, 'success', async () => {
+          delete trackedListings[data.id];
+          refreshAllDetailBars();
+          await ZameenStorage.removeListing(data.id);
+        });
       }
     });
+
+    // 2. Status Dropdown
+    const statusSelect = bar.querySelector('.zt-detail-status-select');
+    statusSelect.addEventListener('change', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const newStatus = e.target.value;
+      if (newStatus === 'unmark') {
+        const current = trackedListings[data.id];
+        delete trackedListings[data.id];
+        refreshAllDetailBars();
+        await ZameenStorage.removeListing(data.id);
+        showToast(`Removed #${data.id} from contacted`, 'info', async () => {
+          if (current) {
+            trackedListings[data.id] = current;
+            refreshAllDetailBars();
+            await ZameenStorage.saveListing(current);
+          }
+        });
+      } else {
+        const current = trackedListings[data.id] || { ...data };
+        const updated = {
+          ...current,
+          status: newStatus
+        };
+        trackedListings[data.id] = updated;
+        refreshAllDetailBars();
+        await ZameenStorage.saveListing(updated);
+        showToast(`Status updated to: ${newStatus}`);
+      }
+    });
+
+    // 3. Note Button
+    const noteBtn = bar.querySelector('.zt-btn-note');
+    noteBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleDetailNotePopover(bar, data);
+    });
+  }
+
+  /**
+   * Detail Note Popover
+   */
+  function toggleDetailNotePopover(bar, data) {
+    const existing = bar.querySelector('.zt-note-popover');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    const tracked = trackedListings[data.id] || {};
+    const popover = document.createElement('div');
+    popover.className = 'zt-note-popover';
+    popover.addEventListener('click', (e) => e.stopPropagation());
+    popover.addEventListener('mousedown', (e) => e.stopPropagation());
+
+    popover.innerHTML = `
+      <div class="zt-note-popover-header">
+        <span>Property #${data.id} Note</span>
+        <button class="zt-note-popover-close" type="button">✕</button>
+      </div>
+      <textarea class="zt-note-textarea" placeholder="Owner's demand, agent name, phone, or plot details...">${tracked.note || ''}</textarea>
+      <div class="zt-note-popover-actions">
+        <button class="zt-btn-save-note" type="button">Save Note</button>
+      </div>
+    `;
+
+    const closeBtn = popover.querySelector('.zt-note-popover-close');
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      popover.remove();
+    });
+
+    const saveBtn = popover.querySelector('.zt-btn-save-note');
+    saveBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const text = popover.querySelector('.zt-note-textarea').value.trim();
+      const current = trackedListings[data.id] || {
+        ...data,
+        status: 'contacted',
+        contactedAt: new Date().toISOString()
+      };
+      const updated = {
+        ...current,
+        note: text
+      };
+      trackedListings[data.id] = updated;
+      refreshAllDetailBars();
+      await ZameenStorage.saveListing(updated);
+      popover.remove();
+      showToast(`Note saved for #${data.id}`);
+    });
+
+    bar.appendChild(popover);
+    popover.querySelector('textarea').focus();
+  }
+
+  /**
+   * Auto-contact triggers for Detail Page Call / Email / WhatsApp buttons
+   */
+  function setupDetailContactListeners(data) {
+    if (document.body.dataset.ztDetailBound === data.id) return;
+    document.body.dataset.ztDetailBound = data.id;
+
+    // Call buttons on page
+    document.querySelectorAll('button[aria-label="Call"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        handleDetailContactAction(data, 'Call');
+      });
+    });
+
+    // Send email button on agency form
+    document.querySelectorAll('button[aria-label="Send email"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        handleDetailContactAction(data, 'Email');
+      });
+    });
+
+    // WhatsApp share links
+    document.querySelectorAll('a[title="Share on WhatsApp"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        handleDetailContactAction(data, 'WhatsApp');
+      });
+    });
+  }
+
+  async function handleDetailContactAction(data, method) {
+    if (!userSettings.autoMarkOnContact) return;
+    const existing = trackedListings[data.id];
+    if (!existing) {
+      const newListing = {
+        ...data,
+        status: 'contacted',
+        contactMethod: method,
+        contactedAt: new Date().toISOString()
+      };
+      trackedListings[data.id] = newListing;
+      refreshAllDetailBars();
+      await ZameenStorage.saveListing(newListing);
+      showToast(`✓ Marked #${data.id} as Contacted via ${method}!`, 'success', async () => {
+        delete trackedListings[data.id];
+        refreshAllDetailBars();
+        await ZameenStorage.removeListing(data.id);
+      });
+    }
   }
 
   /**
@@ -511,7 +783,7 @@
   }
 
   /**
-   * Setup MutationObserver for dynamically loaded listings
+   * Setup MutationObserver for dynamically loaded listings & SPA detail views
    */
   function setupObserver() {
     let debounceTimer = null;
@@ -519,13 +791,66 @@
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         processListings();
-      }, 300);
+        initDetailPage();
+      }, 250);
     });
 
     observer.observe(document.body, {
       childList: true,
       subtree: true
     });
+  }
+
+  /**
+   * Watch for SPA route / URL changes (HTML5 history API)
+   */
+  function setupRouteWatcher() {
+    let lastUrl = location.href;
+    const checkUrlChange = () => {
+      const currentUrl = location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        setTimeout(() => {
+          processListings();
+          initDetailPage();
+        }, 150);
+      }
+    };
+
+    window.addEventListener('popstate', checkUrlChange);
+
+    const origPushState = history.pushState;
+    history.pushState = function () {
+      origPushState.apply(this, arguments);
+      checkUrlChange();
+    };
+
+    const origReplaceState = history.replaceState;
+    history.replaceState = function () {
+      origReplaceState.apply(this, arguments);
+      checkUrlChange();
+    };
+  }
+
+  function formatRelativeTime(isoString) {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch {
+      return '';
+    }
   }
 
   /**
