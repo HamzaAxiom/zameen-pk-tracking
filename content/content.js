@@ -532,23 +532,17 @@
 
     bar.innerHTML = `
       <div class="zt-detail-bar-inner zt-detail-bar-${barType}">
-        <div class="zt-detail-left">
+        <div class="zt-detail-group">
           <span class="zt-brand-pill">
             <svg viewBox="0 0 20 20" class="zt-logo-icon"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
             Tracker
           </span>
-          <span class="zt-status-pill zt-status-${isContacted ? currentStatus : 'uncontacted'}">
-            ${isContacted ? `${ICONS.check} ${statusText}` : '○ Not Contacted'}
-          </span>
-          ${relativeTime ? `<span class="zt-contacted-time" title="${new Date(tracked.contactedAt).toLocaleString()}">${relativeTime}</span>` : ''}
-        </div>
 
-        <div class="zt-detail-actions">
           <button type="button" class="zt-btn zt-detail-toggle-btn ${isContacted ? `zt-btn-${currentStatus}` : 'zt-btn-mark'}">
             ${isContacted ? `${ICONS.check} ${statusText}` : `${ICONS.plus} Mark Contacted`}
           </button>
 
-          <select class="zt-status-select zt-detail-status-select" style="display: ${isContacted ? 'inline-block' : 'none'};">
+          <select class="zt-status-select zt-detail-status-select" style="display: ${isContacted ? 'inline-flex' : 'none'};">
             <option value="contacted" ${currentStatus === 'contacted' ? 'selected' : ''}>✓ Contacted</option>
             <option value="followup" ${currentStatus === 'followup' ? 'selected' : ''}>⏳ Follow-up</option>
             <option value="rejected" ${currentStatus === 'rejected' ? 'selected' : ''}>✕ Passed</option>
@@ -558,6 +552,8 @@
           <button type="button" class="zt-btn zt-btn-note ${hasNote ? 'has-note' : ''}">
             ${ICONS.note} <span>${hasNote ? 'Note' : 'Add Note'}</span>
           </button>
+
+          ${relativeTime ? `<span class="zt-contacted-time" title="${new Date(tracked.contactedAt).toLocaleString()}">${relativeTime}</span>` : ''}
         </div>
 
         ${hasNote ? `
